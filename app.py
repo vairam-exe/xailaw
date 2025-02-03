@@ -1,70 +1,35 @@
+# app.py
 import streamlit as st
 import yaml
-import requests
+import google.generativeai as genai
+import time
+import re
 
-# --- Load Gemini API configuration from a YAML file ---
-def load_config(config_path="config.yaml"):
-    """
-    Loads configuration data (such as Gemini API key) from a YAML file.
-    """
+def load_config():
+    """Load configuration from config.yaml"""
     try:
-        with open(config_path, "r") as file:
-            config = yaml.safe_load(file)
+        with open('config.yaml', 'r') as f:
+            config = yaml.safe_load(f)
         return config
-    except Exception as e:
-        st.error(f"Error loading configuration: {e}")
-        return {}
+    except FileNotFoundError:
+        raise Exception("config.yaml file not found. Create one with your Gemini API key.")
 
+def initialize_gemini(config):
+    """Initialize Gemini model with API key"""
+    genai.configure(api_key=config['gemini']['api_key'])
+    return genai.GenerativeModel(config['gemini']['model_name'])
+
+# Load configuration
 config = load_config()
-gemini_api_key = config.get("gemini_api_key")
-if not gemini_api_key:
-    st.error("Gemini API key not found in configuration file.")
-    st.stop()
 
-# --- Function to call the Gemini API ---
-def call_gemini_api(query_text):
-    """
-    Calls the Gemini API with the provided query_text.
-    Replace the URL and parameters below with those appropriate for your Gemini API.
-    """
-    url = "https://api.gemini.example/analyze"  # Replace with actual Gemini API endpoint
-    headers = {
-        "Authorization": f"Bearer {gemini_api_key}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "prompt": query_text,
-        "max_tokens": 1024  # Adjust parameters as needed
-    }
-    
-    try:
-        response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()  # Raise exception for HTTP errors
-        # Assume the API returns a JSON with a field 'result' containing the analysis text.
-        result = response.json().get("result", "")
-        return result
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error calling Gemini API: {e}")
-        return ""
+# Initialize Gemini
+model = initialize_gemini(config)
 
-# --- Streamlit Interface ---
-st.title("NyayaBot Legal Analysis")
-st.write("Enter the legal scenario query below. The bot will analyze the query and output a structured legal analysis based on Indian law.")
-
-# Input area for the legal scenario query
-user_query = st.text_area("Enter your legal query scenario:", height=200)
-
-if st.button("Analyze"):
-    if not user_query.strip():
-        st.warning("Please enter a legal query scenario.")
-    else:
-        # Construct the prompt for the Gemini API including instructions for output formatting.
-        # This prompt includes the detailed format structure required.
-        full_prompt = f"""
+# System prompt template for NyayaBot (Legal Analysis)
+SYSTEM_PROMPT = """
 Role: You are "NyayaBot," an AI legal assistant specializing in Indian law compliance. Your task is to analyze user scenarios, explain legal implications with references, and suggest ethical alternatives. Prioritize accuracy, clarity, and explainability in your responses.
 
-Please produce the output exactly in the following structure:
-
+Response Format:
 -----------------------------------------
 **NyayaBot Response**
 
@@ -97,15 +62,85 @@ Please produce the output exactly in the following structure:
 
 "I arrived at this conclusion by analyzing the key legal provisions that regulate the privacy of electronic communications in India. First, I identified that recording a call without consent directly conflicts with the provisions of the Indian Telegraph Act (Section 5), which restricts unauthorized interception. Then, I mapped this to the IT Act 66E, which explicitly penalizes privacy violations in digital communications. I also considered the possibility of defamation under IPC Section 500 if the uploaded content harms someone’s reputation. The absence of a standalone data privacy law in India means these laws collectively govern privacy-related offenses. This layered analysis ensures that the legal implications are thoroughly considered, leading to the final verdict that uploading such a recording without consent is illegal."
 -----------------------------------------
-
-User Query: "{user_query}"
 """
-        # Call the Gemini API with the full prompt.
-        api_response = call_gemini_api(full_prompt)
-        
-        if api_response:
-            # Display the output in a text area.
-            st.markdown("### **NyayaBot Response**")
-            st.text_area("Response", value=api_response, height=600)
-        else:
-            st.error("No response received from the Gemini API. Please try again later.")
+
+# Initialize session state for chat history
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+
+def parse_gemini_response(response):
+    """Parse structured response from Gemini output using regex for NyayaBot legal analysis"""
+    parsed = {
+        'Verdict': '',
+        'Relevant Laws': '',
+        'Explanation': '',
+        'Legal Advice': '',
+        'Warning': '',
+        'XAI-Driven Reasoning': ''
+    }
+    # Attempt to split the response into sections using the delimiter
+    sections = re.split(r'-----------------------------------------', response)
+    if len(sections) >= 3:
+        content = sections[1].strip()
+        # Extract sections by matching the markdown headers
+        verdict_match = re.search(r'🔍 \*\*Verdict:\*\*\s*(.*)', content)
+        parsed['Verdict'] = verdict_match.group(1).strip() if verdict_match else ""
+
+        relevant_laws_match = re.search(r'📜 \*\*Relevant Laws:\*\*\s*(.*?)\n\n', content, re.DOTALL)
+        parsed['Relevant Laws'] = relevant_laws_match.group(1).strip() if relevant_laws_match else ""
+
+        explanation_match = re.search(r'📖 \*\*Explanation:\*\*\s*(.*?)\n\n', content, re.DOTALL)
+        parsed['Explanation'] = explanation_match.group(1).strip() if explanation_match else ""
+
+        legal_advice_match = re.search(r'🛡️ \*\*Legal Advice \(Actionable Alternatives\):\*\*\s*(.*?)\n\n', content, re.DOTALL)
+        parsed['Legal Advice'] = legal_advice_match.group(1).strip() if legal_advice_match else ""
+
+        warning_match = re.search(r'🚨 \*\*Warning:\*\*\s*(.*?)\n\n', content, re.DOTALL)
+        parsed['Warning'] = warning_match.group(1).strip() if warning_match else ""
+
+        xai_match = re.search(r'### \*\*XAI-Driven Reasoning \(Chain-of-Thought Explanation\):\*\*\s*(.*?)$', content, re.DOTALL)
+        parsed['XAI-Driven Reasoning'] = xai_match.group(1).strip() if xai_match else ""
+    else:
+        # Fallback: if parsing fails, return the entire response as Explanation.
+        parsed['Explanation'] = response
+    return parsed
+
+def generate_response(user_input):
+    """Generate and parse Gemini response for legal analysis"""
+    full_prompt = f"{SYSTEM_PROMPT}\nUser Query: {user_input}"
+    try:
+        response = model.generate_content(full_prompt)
+        parsed = parse_gemini_response(response.text)
+        return parsed, response.text
+    except Exception as e:
+        return {"error": f"API Error: {str(e)}"}, ""
+
+# Streamlit UI
+st.title("NyayaBot: Indian Law Compliance Assistant")
+st.caption("Analyze legal scenarios and receive detailed legal analysis based on Indian law.")
+
+user_input = st.chat_input("Enter your legal scenario (e.g., recording a call without consent and uploading it):")
+
+# Display chat history
+for message in st.session_state.chat_history:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Process new input
+if user_input:
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+    with st.spinner("Analyzing legal implications..."):
+        ai_response, full_response = generate_response(user_input)
+        time.sleep(0.5)
+    if 'error' in ai_response:
+        with st.chat_message("assistant"):
+            st.error(ai_response['error'])
+    else:
+        with st.chat_message("assistant"):
+            st.markdown(full_response)
+    st.session_state.chat_history.append({
+        "role": "assistant",
+        "content": full_response
+    })
