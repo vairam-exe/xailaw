@@ -1,1 +1,4 @@
-gemini_api_key: "AIzaSyCP_TjGiOTiR18Qe-WhOYEMtff-WLBu0-g"
+# config.yaml
+gemini:
+  api_key: "AIzaSyCP_TjGiOTiR18Qe-WhOYEMtff-WLBu0-g"  # Replace with your actual Gemini API key
+  model_name: "gemini-1.5-pro-latest"
