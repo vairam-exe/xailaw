@@ -1,8 +1,8 @@
-# Gemini PR Review
+# AI-Powered Automated Pull Request Review
 
 ## Overview
 
-Gemini PR Review is an AI-based automated pull request reviewer designed to streamline the code review process. This GitHub Action checks for changes in your pull requests and utilizes the Gemini AI API to generate a review. The review is then posted as a comment on the pull request, providing insights and suggestions to improve the code quality.
+AI-Powered Automated Pull Request Review is a github action designed to streamline the code review process. This GitHub Action checks for changes in your pull requests and utilizes the AI to generate a review. The review is then posted as a comment on the pull request, providing insights and suggestions to improve the code quality.
 
 ## Features
 
@@ -16,8 +16,8 @@ To use the Gemini PR Review GitHub Action, you need to set up two secret keys in
 
 ### 1. Setting Up the Gemini API Key
 
-1. **Obtain Your Gemini API Key**: 
-   - Sign up or log in to the Gemini platform and navigate to the API section to generate your API key.
+1. **Obtain Your API Access**: 
+
 
 2. **Add the API Key to Your GitHub Repository**:
    - Go to your GitHub repository.
@@ -25,7 +25,7 @@ To use the Gemini PR Review GitHub Action, you need to set up two secret keys in
    - In the left sidebar, click on **Secrets and variables**.
    - Click on **Actions**.
    - Click on **New repository secret**.
-   - Name the secret `GEMINI_API_KEY` and paste your API key into the value field. Click **Add secret**.
+   - Name the secret `API_KEY` and paste your API key into the value field. Click **Add secret**.
 
 ### 2. Setting Up the GitHub Personal Access Token (PAT)
 
@@ -50,16 +50,11 @@ To use the Gemini PR Review GitHub Action, you need to set up two secret keys in
 Once you have set up the required secrets, the Gemini PR Review Action will automatically trigger on pull requests that are opened, reopened, or synchronized. The action will:
 
 1. Check out the code.
-2. Set up Python.
-3. Retrieve the differences in the pull request.
-4. Install the necessary dependencies.
-5. Run the review script using the Gemini API.
-6. Post the review as a comment on the pull request.
+2. Retrieve the differences in the pull request.
+3. Run the AI Based review.
+4. Post the review as a comment on the pull request.
 
 ## Contact
 
-For any assistance or inquiries, please contact Naresh Vairam at [nareshvairam.v@dhl.com](mailto:nareshvairam.v@dhl.com).
+For any assistance or inquiries, please contact Naresh Vairam V at [nareshvairam.v@dhl.com](mailto:nareshvairam.v@dhl.com).
 
----
-
-Feel free to customize this README further based on your project's specific needs!
