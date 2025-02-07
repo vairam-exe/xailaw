@@ -6,7 +6,7 @@ import time
 import re
 
 def load_config():
-    """Load configuration from config.yaml"""
+    """Load configuration from config.yaml."""
     try:
         with open('config.yaml', 'r') as f:
             config = yaml.safe_load(f)
@@ -15,14 +15,14 @@ def load_config():
         raise Exception("config.yaml file not found. Create one with your Gemini API key.")
 
 def initialize_gemini(config):
-    """Initialize Gemini model with API key"""
+    """Initialize the Gemini model with the provided API key."""
     genai.configure(api_key=config['gemini']['api_key'])
     return genai.GenerativeModel(config['gemini']['model_name'])
 
 # Load configuration
 config = load_config()
 
-# Initialize Gemini
+# Initialize Gemini model
 model = initialize_gemini(config)
 
 # System prompt template for NyayaBot (Legal Analysis)
@@ -69,7 +69,7 @@ if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
 def parse_gemini_response(response):
-    """Parse structured response from Gemini output using regex for NyayaBot legal analysis"""
+    """Parse structured response from Gemini output for NyayaBot legal analysis."""
     parsed = {
         'Verdict': '',
         'Relevant Laws': '',
@@ -78,35 +78,31 @@ def parse_gemini_response(response):
         'Warning': '',
         'XAI-Driven Reasoning': ''
     }
-    # Attempt to split the response into sections using the delimiter
+    
+    # Split the response into sections using the delimiter
     sections = re.split(r'-----------------------------------------', response)
     if len(sections) >= 3:
         content = sections[1].strip()
+        
         # Extract sections by matching the markdown headers
-        verdict_match = re.search(r'🔍 \*\*Verdict:\*\*\s*(.*)', content)
-        parsed['Verdict'] = verdict_match.group(1).strip() if verdict_match else ""
-
-        relevant_laws_match = re.search(r'📜 \*\*Relevant Laws:\*\*\s*(.*?)\n\n', content, re.DOTALL)
-        parsed['Relevant Laws'] = relevant_laws_match.group(1).strip() if relevant_laws_match else ""
-
-        explanation_match = re.search(r'📖 \*\*Explanation:\*\*\s*(.*?)\n\n', content, re.DOTALL)
-        parsed['Explanation'] = explanation_match.group(1).strip() if explanation_match else ""
-
-        legal_advice_match = re.search(r'🛡️ \*\*Legal Advice \(Actionable Alternatives\):\*\*\s*(.*?)\n\n', content, re.DOTALL)
-        parsed['Legal Advice'] = legal_advice_match.group(1).strip() if legal_advice_match else ""
-
-        warning_match = re.search(r'🚨 \*\*Warning:\*\*\s*(.*?)\n\n', content, re.DOTALL)
-        parsed['Warning'] = warning_match.group(1).strip() if warning_match else ""
-
-        xai_match = re.search(r'### \*\*XAI-Driven Reasoning \(Chain-of-Thought Explanation\):\*\*\s*(.*?)$', content, re.DOTALL)
-        parsed['XAI-Driven Reasoning'] = xai_match.group(1).strip() if xai_match else ""
+        parsed['Verdict'] = extract_section(content, r'🔍 \*\*Verdict:\*\*\s*(.*)')
+        parsed['Relevant Laws'] = extract_section(content, r'📜 \*\*Relevant Laws:\*\*\s*(.*?)\n\n', re.DOTALL)
+        parsed['Explanation'] = extract_section(content, r'📖 \*\*Explanation:\*\*\s*(.*?)\n\n', re.DOTALL)
+        parsed['Legal Advice'] = extract_section(content, r'🛡️ \*\*Legal Advice \(Actionable Alternatives\):\*\*\s*(.*?)\n\n', re.DOTALL)
+        parsed['Warning'] = extract_section(content, r'🚨 \*\*Warning:\*\*\s*(.*?)\n\n', re.DOTALL)
+        parsed['XAI-Driven Reasoning'] = extract_section(content, r'### \*\*XAI-Driven Reasoning \(Chain-of-Thought Explanation\):\*\*\s*(.*?)$', re.DOTALL)
     else:
         # Fallback: if parsing fails, return the entire response as Explanation.
         parsed['Explanation'] = response
     return parsed
 
+def extract_section(content, pattern, flags=0):
+    """Helper function to extract a section from content using regex."""
+    match = re.search(pattern, content, flags)
+    return match.group(1).strip() if match else ""
+
 def generate_response(user_input):
-    """Generate and parse Gemini response for legal analysis"""
+    """Generate and parse Gemini response for legal analysis."""
     full_prompt = f"{SYSTEM_PROMPT}\nUser Query: {user_input}"
     try:
         response = model.generate_content(full_prompt)
