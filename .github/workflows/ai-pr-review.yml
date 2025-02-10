@@ -1,6 +1,4 @@
 name: Gemini PR Review
-env:
-  GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
 on:
   pull_request:
     types:
