@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '2.7.5'
 
       - name: Get PR Diff
         id: get-diff
@@ -42,14 +42,6 @@ jobs:
           GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
         run: |
           python gemini_review.py
-
-      - name: Upload Review and Diff Artifacts
-        uses: actions/upload-artifact@v3.1.0  # Updated to the latest version
-        with:
-          name: review-and-diff-artifacts  # Name of the artifact
-          path: |
-            review.md          # Path to the review file
-            diffs/*.diff       # Path to all diff files in the diffs directory
 
       - name: Post Gemini Review
         uses: actions/github-script@v6
