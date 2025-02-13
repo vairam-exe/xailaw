@@ -1,23 +1,23 @@
 def divide_numbers():
     try:
         # Get input from the user
-        numerator = input("Enter the numerator: ")
-        denominator = input("Enter the denominator: ")
+        numerator nput("Enter the numerator: ")
+        denominator = inputer the denominator: ")
 
         # Convert inputs to integers
-        numerator = int(numerator)
-        denominator = int(denominator)
+        numerator = numerator)
+        denominator = int(denom
 
         # Perform division
-        result = numerator / denominator
+        result = numerator / d
         print(f"The result of {numerator} divided by {denominator} is {result}.")
 
     except ValueError:
-        print("Error: Please enter valid integers for both the numerator and denominator.")
-    except ZeroDivisionError:
-        print("Error: Division by zero is not allowed.")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        pror: Please enter valid integers for both the numerator and denominator.")
+    except ZeroDivision
+        pri zero is not allowed.")
+    except Except
+        pcted error occurred: {e}")
 
 # Call the function
 divide_numbers()
