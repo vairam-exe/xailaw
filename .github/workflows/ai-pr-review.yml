@@ -33,7 +33,7 @@ jobs:
           done
 
       - name: Upload Diff Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@latest  # Updated to the latest version
         with:
           name: pr-diffs
           path: diffs/
