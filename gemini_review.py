@@ -18,16 +18,7 @@ for diff_file in diff_dir.glob("*.diff"):
     filename = filename_match.group(1) if filename_match else diff_file.stem
 
     response = model.generate_content(
-        f"""Analyze this code diff as a senior developer. Focus on:
-1. Potential bugs and errors
-2. Security vulnerabilities
-3. Code quality improvements
-4. Best practices violations
-
-Format response in markdown with clear sections. Be concise but thorough.
-
-Code diff:
-{diff}"""
+        f"""You are a senior code reviewer. Analyze the provided code diff for: code quality, security issues, best practices, and potential bugs. Provide specific feedback with line numbers and suggestions. {diff}"""
     )
     
     review_content.append(f"### 📄 File: {filename}\n\n{response.text}\n\n---")
