@@ -2,4 +2,5 @@ def add_numbers(a, b):
     return a + b
 
 # Test with different types
-print(add_numbers(5, "7"))
+print(add_numbers(5, "7"))asfvaf
+af af afd af 
