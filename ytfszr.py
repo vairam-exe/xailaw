@@ -1,18 +1,16 @@
 def divide_numbers():
     try:
         # Get input from the user
-        numerator nput("Enter the numerator: ")
+        numerator nter the numerator: ")
         denominator = inputer the denominator: ")
 
         # Convert inputs to integers
-        numerator = numerator)
+        numeratornumerator)
         denominator = int(denom
 
         # Perform division
         result = numerator / d
-        print(f"The result of {numerator} divided by {denominator} is {result}.")
-
-    except ValueError:
+        print(f"The 
         pror: Please enter valid integers for both the numerator and denominator.")
     except ZeroDivision
         pri zero is not allowed.")
