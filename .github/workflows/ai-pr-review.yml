@@ -16,17 +16,25 @@ jobs:
       pull-requests: write  # Allow posting comments on pull requests
       contents: read        # Allow reading the repository contents
     steps:
+      # Calculate the number of assignees and set it as an output
+      - name: Calculate Assignee Count
+        id: assignee_count
+        run: |
+          ASSIGNEE_COUNT=$(jq -r '.pull_request.assignees | length' "$GITHUB_EVENT_PATH")
+          echo "Assignee count: $ASSIGNEE_COUNT"
+          echo "assignee_count=$ASSIGNEE_COUNT" >> $GITHUB_OUTPUT
+
       # Debug step to log event type, action, labels, and assignees
       - name: Debug Event Info
         run: |
           echo "Event type: ${{ github.event_name }}"
           echo "Action: ${{ github.event.action }}"
           echo "Labels: $(jq -r '.pull_request.labels[].name' "$GITHUB_EVENT_PATH" | tr '\n' ' ')"
-          echo "Number of assignees: $(jq -r '.pull_request.assignees | length' "$GITHUB_EVENT_PATH")"
+          echo "Number of assignees: ${{ steps.assignee_count.outputs.assignee_count }}"
 
       # Check if PR has assignees and comment if none exist
       - name: Check Assignees
-        if: ${{ github.event.pull_request.assignees.length == 0 }}
+        if: ${{ steps.assignee_count.outputs.assignee_count == '0' }}
         uses: actions/github-script@v6
         with:
           script: |
@@ -40,7 +48,7 @@ jobs:
       # Checkout the repository code (only if assignees exist and 're review' label is present)
       - name: Checkout code
         if: >-
-          ${{ github.event.pull_request.assignees.length > 0 &&
+          ${{ steps.assignee_count.outputs.assignee_count > 0 &&
               contains(github.event.pull_request.labels.*.name, 're review') &&
               github.event.action == 'labelled' }}
         uses: actions/checkout@v4
@@ -50,7 +58,7 @@ jobs:
       # Set up Python environment (only if conditions met)
       - name: Set up Python
         if: >-
-          ${{ github.event.pull_request.assignees.length > 0 &&
+          ${{ steps.assignee_count.outputs.assignee_count > 0 &&
               contains(github.event.pull_request.labels.*.name, 're review') &&
               github.event.action == 'labelled' }}
         uses: actions/setup-python@v4
@@ -60,7 +68,7 @@ jobs:
       # Get the diff of changed files between base and head (only if conditions met)
       - name: Get PR Diff
         if: >-
-          ${{ github.event.pull_request.assignees.length > 0 &&
+          ${{ steps.assignee_count.outputs.assignee_count > 0 &&
               contains(github.event.pull_request.labels.*.name, 're review') &&
               github.event.action == 'labelled' }}
         id: get-diff
@@ -75,7 +83,7 @@ jobs:
       # Install Python dependencies (only if conditions met)
       - name: Install dependencies
         if: >-
-          ${{ github.event.pull_request.assignees.length > 0 &&
+          ${{ steps.assignee_count.outputs.assignee_count > 0 &&
               contains(github.event.pull_request.labels.*.name, 're review') &&
               github.event.action == 'labelled' }}
         run: |
@@ -84,7 +92,7 @@ jobs:
       # Run the Gemini review script (only if conditions met)
       - name: Run Gemini Review Script
         if: >-
-          ${{ github.event.pull_request.assignees.length > 0 &&
+          ${{ steps.assignee_count.outputs.assignee_count > 0 &&
               contains(github.event.pull_request.labels.*.name, 're review') &&
               github.event.action == 'labelled' }}
         id: gemini-review
@@ -96,7 +104,7 @@ jobs:
       # Debug step to check if review.md exists (only if conditions met)
       - name: Check review.md
         if: >-
-          ${{ github.event.pull_request.assignees.length > 0 &&
+          ${{ steps.assignee_count.outputs.assignee_count > 0 &&
               contains(github.event.pull_request.labels.*.name, 're review') &&
               github.event.action == 'labelled' }}
         run: |
@@ -105,7 +113,7 @@ jobs:
       # Post the review as a comment (only if conditions met)
       - name: Post Gemini Review
         if: >-
-          ${{ github.event.pull_request.assignees.length > 0 &&
+          ${{ steps.assignee_count.outputs.assignee_count > 0 &&
               contains(github.event.pull_request.labels.*.name, 're review') &&
               github.event.action == 'labelled' }}
         uses: actions/github-script@v6
