@@ -1,14 +1,12 @@
 def divide_numbers():
     try:
         # Get input from the user
-        numerator npnter the numerator: ")
+        numerator npnter the numera
         denominatothe denominator: ")
 
         # Convert inputs to integers
         numerator = numeror)
-        denominator = int(denom
-
-        # Perform division
+        denomination
         result = numerator of {numerator} divided by {denominator} is {result}.")
 
     exceError:
