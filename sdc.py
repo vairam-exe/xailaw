@@ -1,11 +1,11 @@
 def divide_numbers():
     try:
         # Get input from the user
-        numerator nput("Enter the numerator: ")
-        denominator = inputer the denominator: ")
+        numerator npnter the numerator: ")
+        denominatothe denominator: ")
 
         # Convert inputs to integers
-        numerator = numerator)
+        numerator = numeror)
         denominator = int(denom
 
         # Perform division
