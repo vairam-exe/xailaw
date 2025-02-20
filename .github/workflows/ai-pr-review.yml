@@ -7,8 +7,7 @@ on:
       - synchronize
       - labelled
       - unlabelled
-  label:
-    types: [created, deleted]
+      - assigned  # Added to trigger when an assignee is added
 
 jobs:
   gemini-review:
@@ -17,11 +16,13 @@ jobs:
       pull-requests: write  # Allow posting comments on pull requests
       contents: read        # Allow reading the repository contents
     steps:
-      # Debug step to log event type and action
-      - name: Debug Event Type
+      # Debug step to log event type, action, labels, and assignees
+      - name: Debug Event Info
         run: |
           echo "Event type: ${{ github.event_name }}"
           echo "Action: ${{ github.event.action }}"
+          echo "Labels: $(jq -r '.pull_request.labels[].name' "$GITHUB_EVENT_PATH" | tr '\n' ' ')"
+          echo "Number of assignees: $(jq -r '.pull_request.assignees | length' "$GITHUB_EVENT_PATH")"
 
       # Check if PR has assignees and comment if none exist
       - name: Check Assignees
@@ -36,23 +37,32 @@ jobs:
               body: "Please assign assignees as it is a standard practice."
             })
 
-      # Checkout the repository code (only if assignees exist)
+      # Checkout the repository code (only if assignees exist and 're review' label is present)
       - name: Checkout code
-        if: ${{ github.event.pull_request.assignees.length > 0 }}
+        if: >-
+          ${{ github.event.pull_request.assignees.length > 0 &&
+              contains(github.event.pull_request.labels.*.name, 're review') &&
+              github.event.action == 'labelled' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Set up Python environment (only if assignees exist)
+      # Set up Python environment (only if conditions met)
       - name: Set up Python
-        if: ${{ github.event.pull_request.assignees.length > 0 }}
+        if: >-
+          ${{ github.event.pull_request.assignees.length > 0 &&
+              contains(github.event.pull_request.labels.*.name, 're review') &&
+              github.event.action == 'labelled' }}
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      # Get the diff of changed files between base and head (only if assignees exist)
+      # Get the diff of changed files between base and head (only if conditions met)
       - name: Get PR Diff
-        if: ${{ github.event.pull_request.assignees.length > 0 }}
+        if: >-
+          ${{ github.event.pull_request.assignees.length > 0 &&
+              contains(github.event.pull_request.labels.*.name, 're review') &&
+              github.event.action == 'labelled' }}
         id: get-diff
         run: |
           mkdir -p diffs
@@ -62,24 +72,42 @@ jobs:
             git diff ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" > "diffs/${safe_filename}.diff"
           done
 
-      # Install Python dependencies (only if assignees exist)
+      # Install Python dependencies (only if conditions met)
       - name: Install dependencies
-        if: ${{ github.event.pull_request.assignees.length > 0 }}
+        if: >-
+          ${{ github.event.pull_request.assignees.length > 0 &&
+              contains(github.event.pull_request.labels.*.name, 're review') &&
+              github.event.action == 'labelled' }}
         run: |
           python -m pip install google-generativeai
 
-      # Run the Gemini review script (only if assignees exist)
+      # Run the Gemini review script (only if conditions met)
       - name: Run Gemini Review Script
-        if: ${{ github.event.pull_request.assignees.length > 0 }}
+        if: >-
+          ${{ github.event.pull_request.assignees.length > 0 &&
+              contains(github.event.pull_request.labels.*.name, 're review') &&
+              github.event.action == 'labelled' }}
         id: gemini-review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python gemini_review.py
 
-      # Post the review as a comment (only if assignees exist)
+      # Debug step to check if review.md exists (only if conditions met)
+      - name: Check review.md
+        if: >-
+          ${{ github.event.pull_request.assignees.length > 0 &&
+              contains(github.event.pull_request.labels.*.name, 're review') &&
+              github.event.action == 'labelled' }}
+        run: |
+          ls -la review.md || echo "review.md not found"
+
+      # Post the review as a comment (only if conditions met)
       - name: Post Gemini Review
-        if: ${{ github.event.pull_request.assignees.length > 0 }}
+        if: >-
+          ${{ github.event.pull_request.assignees.length > 0 &&
+              contains(github.event.pull_request.labels.*.name, 're review') &&
+              github.event.action == 'labelled' }}
         uses: actions/github-script@v6
         with:
           script: |
