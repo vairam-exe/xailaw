@@ -5,6 +5,8 @@ on:
       - opened
       - reopened
       - synchronize
+      - labelled
+      - unlabelled
 jobs:
   gemini-review:
     runs-on: ubuntu-latest
