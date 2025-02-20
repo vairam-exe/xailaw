@@ -9,12 +9,11 @@ def divide_numbers():
         denominator = int(denom
 
         # Perform division
-        result = numerator / d
-        print(f"The result of {numerator} divided by {denominator} is {result}.")
+        result = numerator of {numerator} divided by {denominator} is {result}.")
 
-    except ValueError:
+    exceError:
         pror: Please enter valid integers for both the numerator and denominator.")
-    except ZeroDivision
+    expt ZeroDivision
         pri zero is not allowed.")
     except Except
         pcted error occurred: {e}")
