@@ -7,6 +7,7 @@ on:
       - synchronize
       - labelled
       - unlabelled
+
 jobs:
   gemini-review:
     runs-on: ubuntu-latest
@@ -14,16 +15,38 @@ jobs:
       pull-requests: write  # Allow posting comments on pull requests
       contents: read        # Allow reading the repository contents
     steps:
+      # Debug step to log event type and action
+      - name: Debug Event Type
+        run: |
+          echo "Event type: ${{ github.event_name }}"
+          echo "Action: ${{ github.event.action }}"
+
+      # Check if PR has assignees and comment if none exist
+      - name: Check Assignees
+        if: ${{ github.event.pull_request.assignees.length == 0 }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context['repo'].owner,
+              repo: context['repo'].repo,
+              issue_number: context.issue.number,
+              body: "Please assign assignees as it is a standard practice."
+            })
+
+      # Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
+      # Get the diff of changed files between base and head
       - name: Get PR Diff
         id: get-diff
         run: |
@@ -34,17 +57,20 @@ jobs:
             git diff ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- "$file" > "diffs/${safe_filename}.diff"
           done
 
+      # Install Python dependencies
       - name: Install dependencies
         run: |
           python -m pip install google-generativeai
 
+      # Run the Gemini review script
       - name: Run Gemini Review Script
         id: gemini-review
         env:
-          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python gemini_review.py
 
+      # Post the review as a comment
       - name: Post Gemini Review
         uses: actions/github-script@v6
         with:
@@ -52,8 +78,8 @@ jobs:
             const fs = require('fs');
             const review = fs.readFileSync('review.md', 'utf8');
             await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner: context['repo'].owner,
+              repo: context['repo'].repo,
               issue_number: context.issue.number,
               body: review
             });
